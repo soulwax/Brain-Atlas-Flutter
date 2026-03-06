@@ -53,6 +53,10 @@ class BrainExpeditionController extends ChangeNotifier {
       List<String>.unmodifiable(_codexEntries.reversed.take(3));
 
   String get progressLabel => 'Stabilized $stabilizedCount/${_catalog.length}';
+  bool get canLaunchSelectedMission =>
+      selectedProgress.isAvailable && !selectedProgress.isStabilized;
+  String get selectedMissionPrompt => selectedRegion.challengePrompt;
+  String get selectedSignalRule => selectedRegion.correctOption.label;
 
   String get missionHeadline {
     if (expeditionComplete) {
@@ -122,55 +126,54 @@ class BrainExpeditionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void answerSelected(int optionIndex) {
-    if (selectedProgress.isStabilized || optionIndex < 0) {
+  void completeSelectedMission({required double integrity}) {
+    if (!canLaunchSelectedMission) {
       return;
     }
 
-    final options = selectedRegion.challengeOptions;
-    if (optionIndex >= options.length) {
-      return;
-    }
-
-    final option = options[optionIndex];
     final currentProgress = selectedProgress.copyWith(
       attempts: selectedProgress.attempts + 1,
+      state: BrainRegionState.stabilized,
     );
+    final integrityValue = integrity.clamp(0.0, 1.0);
+    final bonusInsight = integrityValue >= 0.92 ? 1 : 0;
+    final signalGain = 8 + (integrityValue * 8).round();
+
     _progress[_selectedRegionId] = currentProgress;
+    _insight += selectedRegion.rewardInsight + bonusInsight;
+    _signalStrength = math.min(_maxSignalStrength, _signalStrength + signalGain);
+    _focus = math.min(_maxFocus, _focus + (integrityValue >= 0.82 ? 1 : 0));
+    _streak += 1;
+    _appendFeed(selectedRegion.correctOption.feedback);
+    _appendFeed(
+      'Signal trace stabilized ${selectedRegion.name} at ${(integrityValue * 100).round()}% integrity.',
+    );
+    if (bonusInsight > 0) {
+      _appendFeed('High-integrity routing bonus secured. Extra insight archived.');
+    }
+    _appendCodex(selectedRegion.codexEntry);
+    _unlockConnections(selectedRegion);
+    _selectNextFrontier();
+
+    _checkFocusReset();
+    _checkCompletion();
+
+    notifyListeners();
+  }
+
+  void failSelectedMission({required String reason}) {
+    if (!canLaunchSelectedMission) {
+      return;
+    }
+
+    _progress[_selectedRegionId] = selectedProgress.copyWith(
+      attempts: selectedProgress.attempts + 1,
+    );
     _focus = math.max(0, _focus - 1);
-
-    if (option.isCorrect) {
-      _progress[_selectedRegionId] = currentProgress.copyWith(
-        state: BrainRegionState.stabilized,
-      );
-      _insight += selectedRegion.rewardInsight;
-      _signalStrength = math.min(_maxSignalStrength, _signalStrength + 10);
-      _focus = math.min(_maxFocus, _focus + 1);
-      _streak += 1;
-      _appendFeed(option.feedback);
-      _appendCodex(selectedRegion.codexEntry);
-      _unlockConnections(selectedRegion);
-      _selectNextFrontier();
-    } else {
-      _signalStrength = math.max(38, _signalStrength - 9);
-      _streak = 0;
-      _appendFeed(option.feedback);
-    }
-
-    if (_focus == 0 && !expeditionComplete) {
-      _focus = _maxFocus;
-      _signalStrength = math.min(_maxSignalStrength, _signalStrength + 4);
-      _appendFeed(
-        'Neural lens recalibrated. Focus restored for the next sweep.',
-      );
-    }
-
-    if (expeditionComplete) {
-      _appendFeed(
-        'Opening network complete. The canvas loop is proven and ready for deeper systems.',
-      );
-    }
-
+    _signalStrength = math.max(34, _signalStrength - 10);
+    _streak = 0;
+    _appendFeed(reason);
+    _checkFocusReset();
     notifyListeners();
   }
 
@@ -231,5 +234,21 @@ class BrainExpeditionController extends ChangeNotifier {
     }
 
     _codexEntries.add(entry);
+  }
+
+  void _checkFocusReset() {
+    if (_focus == 0 && !expeditionComplete) {
+      _focus = _maxFocus;
+      _signalStrength = math.min(_maxSignalStrength, _signalStrength + 4);
+      _appendFeed('Neural lens recalibrated. Focus restored for the next sweep.');
+    }
+  }
+
+  void _checkCompletion() {
+    if (expeditionComplete) {
+      _appendFeed(
+        'Opening network complete. The map loop now supports mission-based progression.',
+      );
+    }
   }
 }

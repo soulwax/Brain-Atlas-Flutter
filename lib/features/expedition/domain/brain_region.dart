@@ -76,6 +76,9 @@ class BrainRegion {
   final List<ChallengeOption> challengeOptions;
   final String codexEntry;
   final int rewardInsight;
+
+  ChallengeOption get correctOption =>
+      challengeOptions.firstWhere((ChallengeOption option) => option.isCorrect);
 }
 
 class BrainRegionProgress {
