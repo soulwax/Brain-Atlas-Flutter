@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../application/brain_expedition_controller.dart';
+import '../domain/brain_case_file.dart';
 import '../domain/brain_region.dart';
-import '../domain/signal_trace_mission.dart';
 import 'widgets/brain_map_canvas.dart';
 import 'widgets/signal_trace_mission_sheet.dart';
 
@@ -19,22 +19,7 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
     with SingleTickerProviderStateMixin {
   late final BrainExpeditionController _controller;
   late final AnimationController _pulseController;
-  String? _activeMissionRegionId;
-
-  BrainRegion? get _activeMissionRegion {
-    final activeMissionRegionId = _activeMissionRegionId;
-    if (activeMissionRegionId == null) {
-      return null;
-    }
-
-    for (final BrainRegion region in _controller.regions) {
-      if (region.id == activeMissionRegionId) {
-        return region;
-      }
-    }
-
-    return null;
-  }
+  bool _missionOpen = false;
 
   @override
   void initState() {
@@ -63,7 +48,7 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
     return AnimatedBuilder(
       animation: mergedListenable,
       builder: (BuildContext context, Widget? child) {
-        final activeMissionRegion = _activeMissionRegion;
+        final activeCase = _controller.activeCase;
         final theme = Theme.of(context);
 
         return Scaffold(
@@ -86,14 +71,16 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
                     padding: const EdgeInsets.all(20),
                     child: LayoutBuilder(
                       builder: (BuildContext context, BoxConstraints constraints) {
-                        final isWide = constraints.maxWidth >= 1120;
+                        final isWide = constraints.maxWidth >= 1140;
                         final mapPanel = _MapPanel(
                           controller: _controller,
                           pulse: _pulseController.value,
                         );
                         final sidePanel = _SidePanel(
                           controller: _controller,
-                          onLaunchMission: _openMissionForSelectedRegion,
+                          onSubmitHypothesis: _controller.submitHypothesis,
+                          onLaunchMission: _openMission,
+                          onAdvanceCase: _handleAdvanceCase,
                         );
 
                         return Column(
@@ -115,8 +102,8 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
                                         SizedBox(
                                           width: math
                                               .min(
-                                                430,
-                                                constraints.maxWidth * 0.33,
+                                                450,
+                                                constraints.maxWidth * 0.35,
                                               )
                                               .toDouble(),
                                           child: sidePanel,
@@ -140,7 +127,9 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
                             ),
                             const SizedBox(height: 14),
                             Text(
-                              'The overworld now hands off to a real mission loop. WebGL can become a presentation layer once the trace mechanic feels right.',
+                              activeCase == null
+                                  ? 'The diagnostic slice is complete. Add another case arc or a second repair mechanic next.'
+                                  : 'Teaching now happens through symptom, hypothesis, repair, and validation instead of region labels first.',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: const Color(0xFF8EA8B4),
                               ),
@@ -152,9 +141,12 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
                   ),
                 ),
               ),
-              if (activeMissionRegion != null)
+              if (_missionOpen &&
+                  activeCase != null &&
+                  _controller.selectedRegion != null)
                 SignalTraceMissionSheet(
-                  region: activeMissionRegion,
+                  region: _controller.selectedRegion!,
+                  caseFile: activeCase,
                   focus: _controller.focus,
                   signalStrength: _controller.signalStrength,
                   onMissionSuccess: (double integrity) {
@@ -172,24 +164,29 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
     );
   }
 
-  void _openMissionForSelectedRegion() {
+  void _openMission() {
     if (!_controller.canLaunchSelectedMission) {
       return;
     }
 
     setState(() {
-      _activeMissionRegionId = _controller.selectedRegion.id;
+      _missionOpen = true;
     });
   }
 
   void _closeMission() {
-    if (_activeMissionRegionId == null) {
+    if (!_missionOpen) {
       return;
     }
 
     setState(() {
-      _activeMissionRegionId = null;
+      _missionOpen = false;
     });
+  }
+
+  void _handleAdvanceCase() {
+    _closeMission();
+    _controller.advanceCase();
   }
 
   void _handleReset() {
@@ -222,7 +219,7 @@ class _Header extends StatelessWidget {
               Text('Neural Cartographer', style: theme.textTheme.displaySmall),
               const SizedBox(height: 10),
               Text(
-                'Explore a living brain map, launch short signal-trace missions, and stabilize core regions through execution instead of static answers.',
+                'Diagnose the failing brain circuit from symptoms first, repair it through action, then validate the behavioral change before the explanation lands.',
                 style: theme.textTheme.bodyLarge,
               ),
               const SizedBox(height: 16),
@@ -261,7 +258,7 @@ class _Header extends StatelessWidget {
             Text(controller.progressLabel, style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
-              'Foundation loop: scan, trace, stabilize, expand.',
+              'Loop: observe, localize, repair, validate.',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -277,7 +274,7 @@ class _Header extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: controller.jumpToNextFrontier,
                   icon: const Icon(Icons.route_rounded),
-                  label: const Text('Next hotspot'),
+                  label: const Text('Browse hotspots'),
                 ),
               ],
             ),
@@ -297,6 +294,7 @@ class _MapPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final activeCase = controller.activeCase;
 
     return _SurfaceCard(
       child: Column(
@@ -308,8 +306,8 @@ class _MapPanel extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
               Text('Exploration Surface', style: theme.textTheme.titleLarge),
-              const Chip(label: Text('Canvas-ready')),
-              const Chip(label: Text('Mission loop active')),
+              _StageChip(stage: controller.caseStage),
+              if (activeCase != null) Chip(label: Text(activeCase.caseCode)),
               Chip(label: Text('${controller.reachableCount} hotspots online')),
             ],
           ),
@@ -334,7 +332,7 @@ class _MapPanel extends StatelessWidget {
                 child: BrainMapCanvas(
                   regions: controller.regions,
                   progressByRegion: controller.progressByRegion,
-                  selectedRegionId: controller.selectedRegion.id,
+                  selectedRegionId: controller.selectedRegion?.id,
                   pulse: pulse,
                   onRegionTap: controller.selectRegion,
                 ),
@@ -358,144 +356,60 @@ class _MapPanel extends StatelessWidget {
 }
 
 class _SidePanel extends StatelessWidget {
-  const _SidePanel({required this.controller, required this.onLaunchMission});
+  const _SidePanel({
+    required this.controller,
+    required this.onSubmitHypothesis,
+    required this.onLaunchMission,
+    required this.onAdvanceCase,
+  });
 
   final BrainExpeditionController controller;
+  final VoidCallback onSubmitHypothesis;
   final VoidCallback onLaunchMission;
+  final VoidCallback onAdvanceCase;
 
   @override
   Widget build(BuildContext context) {
-    final region = controller.selectedRegion;
-    final progress = controller.selectedProgress;
-    final spec = buildSignalTraceMissionSpec(region);
-    final theme = Theme.of(context);
+    final activeCase = controller.activeCase;
 
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _SurfaceCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    Text(region.name, style: theme.textTheme.titleLarge),
-                    Chip(label: Text(region.discipline.label)),
-                    if (progress.isStabilized)
-                      const Chip(label: Text('Stabilized')),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(region.summary, style: theme.textTheme.bodyMedium),
-                const SizedBox(height: 14),
-                Text(
-                  'Attempts: ${progress.attempts}',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Reward: +${region.rewardInsight} insight',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFF3C96C),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                if (controller.canLaunchSelectedMission)
-                  FilledButton.icon(
-                    onPressed: onLaunchMission,
-                    icon: const Icon(Icons.graphic_eq_rounded),
-                    label: const Text('Launch signal trace'),
-                  )
-                else
-                  OutlinedButton.icon(
-                    onPressed: controller.jumpToNextFrontier,
-                    icon: const Icon(Icons.arrow_outward_rounded),
-                    label: const Text('Move to next frontier'),
-                  ),
-              ],
+          if (activeCase == null)
+            _CompletionCard(controller: controller)
+          else ...<Widget>[
+            _CaseFileCard(
+              caseFile: activeCase,
+              caseStatus: controller.caseStatus,
             ),
-          ),
+            const SizedBox(height: 16),
+            _HypothesisCard(
+              controller: controller,
+              onSubmitHypothesis: onSubmitHypothesis,
+              onLaunchMission: onLaunchMission,
+              onAdvanceCase: onAdvanceCase,
+            ),
+            const SizedBox(height: 16),
+            _SceneCard(caseFile: activeCase, stage: controller.caseStage),
+          ],
           const SizedBox(height: 16),
           _SurfaceCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Signal Trace Mission', style: theme.textTheme.titleLarge),
-                const SizedBox(height: 12),
                 Text(
-                  controller.selectedMissionPrompt,
-                  style: theme.textTheme.bodyLarge,
+                  'Recent Activity',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-                const SizedBox(height: 14),
-                Text('Desired signal rule', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 6),
-                Text(
-                  controller.selectedSignalRule,
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                _StatLine(
-                  label: 'Time window',
-                  value: '${spec.timeLimit.inSeconds}s',
-                ),
-                _StatLine(
-                  label: 'Noise fields',
-                  value: '${spec.noiseZones.length}',
-                ),
-                _StatLine(
-                  label: 'Signal corridor',
-                  value: '${(spec.laneWidthFactor * 100).round()}%',
-                ),
-                _StatLine(label: 'Difficulty', value: '${spec.difficulty}'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _SurfaceCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Gameplay Loop', style: theme.textTheme.titleLarge),
-                const SizedBox(height: 14),
-                const _LoopStep(
-                  index: '01',
-                  title: 'Scan the brain map',
-                  description:
-                      'Tap a reachable hotspot and inspect the role that region plays in the broader network.',
-                ),
-                const SizedBox(height: 14),
-                const _LoopStep(
-                  index: '02',
-                  title: 'Trace the signal route',
-                  description:
-                      'Launch a short mission, drag the pulse through every relay, and avoid unstable noise fields.',
-                ),
-                const SizedBox(height: 14),
-                const _LoopStep(
-                  index: '03',
-                  title: 'Stabilize and expand',
-                  description:
-                      'Successful traces stabilize the node, boost insight, and expose adjacent pathways for the next run.',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _SurfaceCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Recent Activity', style: theme.textTheme.titleLarge),
                 const SizedBox(height: 12),
                 for (final String entry in controller.activityFeed)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: Text('• $entry', style: theme.textTheme.bodyMedium),
+                    child: Text(
+                      '• $entry',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ),
               ],
             ),
@@ -507,8 +421,8 @@ class _SidePanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    'Unlocked Codex Notes',
-                    style: theme.textTheme.titleLarge,
+                    'Archived Learnings',
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
                   for (final String entry in controller.codexEntries)
@@ -516,13 +430,247 @@ class _SidePanel extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 10),
                       child: Text(
                         '• $entry',
-                        style: theme.textTheme.bodyMedium,
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
                 ],
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CaseFileCard extends StatelessWidget {
+  const _CaseFileCard({required this.caseFile, required this.caseStatus});
+
+  final BrainCaseFile caseFile;
+  final String caseStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return _SurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              Chip(label: Text(caseFile.caseCode)),
+              Text(caseFile.title, style: theme.textTheme.titleLarge),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(caseFile.presentingProblem, style: theme.textTheme.bodyLarge),
+          const SizedBox(height: 14),
+          Text(caseFile.observationSummary, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 14),
+          for (final String note in caseFile.observationNotes)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text('• $note', style: theme.textTheme.bodyMedium),
+            ),
+          const SizedBox(height: 12),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              color: const Color(0x99102129),
+              border: Border.all(color: const Color(0xFF274A57)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Text(caseStatus, style: theme.textTheme.bodyMedium),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HypothesisCard extends StatelessWidget {
+  const _HypothesisCard({
+    required this.controller,
+    required this.onSubmitHypothesis,
+    required this.onLaunchMission,
+    required this.onAdvanceCase,
+  });
+
+  final BrainExpeditionController controller;
+  final VoidCallback onSubmitHypothesis;
+  final VoidCallback onLaunchMission;
+  final VoidCallback onAdvanceCase;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final selectedRegion = controller.selectedRegion;
+
+    return _SurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('Hypothesis Console', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 12),
+          if (selectedRegion == null)
+            Text(
+              'No hypothesis selected yet. Tap a reachable hotspot to compare that region against the current symptom pattern.',
+              style: theme.textTheme.bodyMedium,
+            )
+          else ...<Widget>[
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                Text(selectedRegion.name, style: theme.textTheme.titleLarge),
+                Chip(label: Text(selectedRegion.discipline.label)),
+                if (controller.selectedProgress?.isStabilized ?? false)
+                  const Chip(label: Text('Stabilized')),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(selectedRegion.summary, style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 14),
+            _StatLine(
+              label: 'Attempts',
+              value: '${controller.selectedProgress?.attempts ?? 0}',
+            ),
+            _StatLine(
+              label: 'Reward',
+              value: '+${selectedRegion.rewardInsight} insight',
+            ),
+          ],
+          const SizedBox(height: 18),
+          if (controller.caseStage == BrainCaseStage.investigation)
+            FilledButton.icon(
+              onPressed: controller.canSubmitHypothesis
+                  ? onSubmitHypothesis
+                  : null,
+              icon: const Icon(Icons.psychology_alt_rounded),
+              label: const Text('Test hypothesis'),
+            ),
+          if (controller.caseStage == BrainCaseStage.repair) ...<Widget>[
+            Text('Repair objective', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              controller.selectedMissionPrompt,
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Text('Signal rule', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              controller.selectedSignalRule,
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: controller.canLaunchSelectedMission
+                  ? onLaunchMission
+                  : null,
+              icon: const Icon(Icons.graphic_eq_rounded),
+              label: const Text('Launch signal trace'),
+            ),
+          ],
+          if (controller.caseStage == BrainCaseStage.debrief) ...<Widget>[
+            Text('Validation archived', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              'The behavior has improved. Archive the case to move on to the next symptom pattern.',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: onAdvanceCase,
+              icon: const Icon(Icons.library_add_check_rounded),
+              label: const Text('Archive case and continue'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SceneCard extends StatelessWidget {
+  const _SceneCard({required this.caseFile, required this.stage});
+
+  final BrainCaseFile caseFile;
+  final BrainCaseStage stage;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final showRestored = stage == BrainCaseStage.debrief;
+
+    return _SurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('Behavior Scene', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 12),
+          Text(
+            showRestored
+                ? caseFile.validationSummary
+                : caseFile.observationSummary,
+            style: theme.textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 16),
+          for (final CaseSceneMetric metric in caseFile.sceneMetrics)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _SceneMetricRow(
+                metric: metric,
+                showRestored: showRestored,
+              ),
+            ),
+          const SizedBox(height: 6),
+          Text(
+            showRestored ? 'Why it changed' : 'What to notice',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            showRestored ? caseFile.explanation : caseFile.hypothesisPrompt,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompletionCard extends StatelessWidget {
+  const _CompletionCard({required this.controller});
+
+  final BrainExpeditionController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return _SurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('Opening Arc Complete', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 12),
+          Text(
+            'The first case loop now works end to end: symptom, localization, repair, validation, explanation.',
+            style: theme.textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Add more cases, more repair types, or a richer scene presentation next. The state model is already shaped around that loop.',
+            style: theme.textTheme.bodyMedium,
+          ),
         ],
       ),
     );
@@ -630,52 +778,95 @@ class _LegendChip extends StatelessWidget {
   }
 }
 
-class _LoopStep extends StatelessWidget {
-  const _LoopStep({
-    required this.index,
-    required this.title,
-    required this.description,
-  });
+class _StageChip extends StatelessWidget {
+  const _StageChip({required this.stage});
 
-  final String index;
-  final String title;
-  final String description;
+  final BrainCaseStage stage;
+
+  @override
+  Widget build(BuildContext context) {
+    final (String label, Color accent) = switch (stage) {
+      BrainCaseStage.investigation => ('Observe', const Color(0xFF8EB8FF)),
+      BrainCaseStage.repair => ('Repair', const Color(0xFF4AD7B1)),
+      BrainCaseStage.debrief => ('Validate', const Color(0xFFF3C96C)),
+      BrainCaseStage.complete => ('Complete', const Color(0xFFFF8B74)),
+    };
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: accent.withValues(alpha: 0.14),
+        border: Border.all(color: accent.withValues(alpha: 0.42)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        child: Text(
+          label,
+          style: TextStyle(color: accent, fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
+  }
+}
+
+class _SceneMetricRow extends StatelessWidget {
+  const _SceneMetricRow({required this.metric, required this.showRestored});
+
+  final CaseSceneMetric metric;
+  final bool showRestored;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Container(
-          width: 42,
-          height: 42,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF132A33),
-            border: Border.all(color: const Color(0xFF2A5867)),
-          ),
-          child: Text(
-            index,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: const Color(0xFF4AD7B1),
-            ),
-          ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: const Color(0x80102129),
+        border: Border.all(color: const Color(0xFF274A57)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(metric.label, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            if (showRestored)
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      metric.impairedValue,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFFFFB6A5),
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Color(0xFFF3C96C),
+                      size: 18,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      metric.restoredValue,
+                      textAlign: TextAlign.right,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFFBFF7E8),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Text(metric.impairedValue, style: theme.textTheme.bodyMedium),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(title, style: theme.textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text(description, style: theme.textTheme.bodyMedium),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

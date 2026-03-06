@@ -16,7 +16,7 @@ class BrainMapCanvas extends StatelessWidget {
 
   final List<BrainRegion> regions;
   final Map<String, BrainRegionProgress> progressByRegion;
-  final String selectedRegionId;
+  final String? selectedRegionId;
   final double pulse;
   final ValueChanged<String> onRegionTap;
 
@@ -85,7 +85,7 @@ class _BrainMapPainter extends CustomPainter {
 
   final List<BrainRegion> regions;
   final Map<String, BrainRegionProgress> progressByRegion;
-  final String selectedRegionId;
+  final String? selectedRegionId;
   final double pulse;
 
   @override

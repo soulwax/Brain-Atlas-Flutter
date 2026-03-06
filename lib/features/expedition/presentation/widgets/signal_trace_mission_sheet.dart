@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../domain/brain_case_file.dart';
 import '../../domain/brain_region.dart';
 import '../../domain/signal_trace_mission.dart';
 
@@ -11,6 +12,7 @@ class SignalTraceMissionSheet extends StatefulWidget {
   const SignalTraceMissionSheet({
     super.key,
     required this.region,
+    required this.caseFile,
     required this.focus,
     required this.signalStrength,
     required this.onMissionSuccess,
@@ -19,6 +21,7 @@ class SignalTraceMissionSheet extends StatefulWidget {
   });
 
   final BrainRegion region;
+  final BrainCaseFile caseFile;
   final int focus;
   final int signalStrength;
   final ValueChanged<double> onMissionSuccess;
@@ -151,14 +154,14 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
               crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
                 Text('Signal Trace', style: theme.textTheme.headlineSmall),
-                Chip(label: Text(widget.region.discipline.label)),
+                Chip(label: Text(widget.caseFile.caseCode)),
                 Chip(label: Text('${_spec.timeLimit.inSeconds}s window')),
                 Chip(label: Text('Difficulty ${_spec.difficulty}')),
               ],
             ),
             const SizedBox(height: 10),
             Text(
-              'Press begin, anchor at the left entry gate, and drag through every relay without touching the noise fields or leaving the stable corridor.',
+              widget.caseFile.repairObjective,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 18),
@@ -218,7 +221,10 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
           children: <Widget>[
             Text(widget.region.name, style: theme.textTheme.titleLarge),
             const SizedBox(height: 10),
-            Text(widget.region.summary, style: theme.textTheme.bodyMedium),
+            Text(
+              widget.caseFile.presentingProblem,
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: 16),
             _HudRow(label: 'Focus reserve', value: '${widget.focus}/4'),
             _HudRow(
@@ -231,7 +237,7 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
             Text('Neural objective', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
-              widget.region.challengePrompt,
+              widget.caseFile.observationSummary,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 14),
@@ -409,7 +415,7 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
       _status = 'Output gate locked. ${widget.region.name} is stable.';
       _resultHeadline = 'Region stabilized';
       _resultBody =
-          'Trace integrity reached ${(integrity * 100).round()}%. Adjacent pathways can now open from the overworld.';
+          'Trace integrity reached ${(integrity * 100).round()}%. ${widget.caseFile.validationSummary}';
     });
   }
 

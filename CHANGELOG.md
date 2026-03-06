@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 - 2026-03-06
+
+### Added
+
+- Added a case-based gameplay loop built around symptom observation, region localization, repair, validation, and short debrief explanations.
+- Added curated brain case files with observation notes, scene metrics, and differential clues for the opening region set.
+- Added a debrief/archive phase so successful repairs now show the behavioral change before moving to the next case.
+
+### Changed
+
+- Changed progression from region-first exploration to symptom-first diagnosis while keeping `Signal Trace` as the first repair mechanic.
+- Updated the interface so the map, side panel, and mission overlay all speak in terms of cases and outcomes rather than isolated region prompts.
+
 ## 0.3.0 - 2026-03-06
 
 ### Added
