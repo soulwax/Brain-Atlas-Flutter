@@ -141,7 +141,10 @@ class BrainExpeditionController extends ChangeNotifier {
 
     _progress[_selectedRegionId] = currentProgress;
     _insight += selectedRegion.rewardInsight + bonusInsight;
-    _signalStrength = math.min(_maxSignalStrength, _signalStrength + signalGain);
+    _signalStrength = math.min(
+      _maxSignalStrength,
+      _signalStrength + signalGain,
+    );
     _focus = math.min(_maxFocus, _focus + (integrityValue >= 0.82 ? 1 : 0));
     _streak += 1;
     _appendFeed(selectedRegion.correctOption.feedback);
@@ -149,7 +152,9 @@ class BrainExpeditionController extends ChangeNotifier {
       'Signal trace stabilized ${selectedRegion.name} at ${(integrityValue * 100).round()}% integrity.',
     );
     if (bonusInsight > 0) {
-      _appendFeed('High-integrity routing bonus secured. Extra insight archived.');
+      _appendFeed(
+        'High-integrity routing bonus secured. Extra insight archived.',
+      );
     }
     _appendCodex(selectedRegion.codexEntry);
     _unlockConnections(selectedRegion);
@@ -240,7 +245,9 @@ class BrainExpeditionController extends ChangeNotifier {
     if (_focus == 0 && !expeditionComplete) {
       _focus = _maxFocus;
       _signalStrength = math.min(_maxSignalStrength, _signalStrength + 4);
-      _appendFeed('Neural lens recalibrated. Focus restored for the next sweep.');
+      _appendFeed(
+        'Neural lens recalibrated. Focus restored for the next sweep.',
+      );
     }
   }
 

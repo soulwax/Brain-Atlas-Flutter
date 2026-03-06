@@ -295,7 +295,9 @@ class _BrainMapPainter extends CustomPainter {
         final pulsePaint = Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2
-          ..color = const Color(0xFFB0F6E3).withValues(alpha: 0.35 + (pulse * 0.25));
+          ..color = const Color(
+            0xFFB0F6E3,
+          ).withValues(alpha: 0.35 + (pulse * 0.25));
         canvas.drawCircle(center, radius * (1.28 + (pulse * 0.1)), pulsePaint);
       }
 

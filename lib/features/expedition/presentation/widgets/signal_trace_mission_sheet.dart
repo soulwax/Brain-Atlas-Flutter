@@ -53,11 +53,10 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
   void initState() {
     super.initState();
     _spec = buildSignalTraceMissionSpec(widget.region);
-    _timerController = AnimationController(
-      vsync: this,
-      duration: _spec.timeLimit,
-    )..addStatusListener((AnimationStatus status) {
-        if (status == AnimationStatus.completed && _phase == SignalTracePhase.live) {
+    _timerController = AnimationController(vsync: this, duration: _spec.timeLimit)
+      ..addStatusListener((AnimationStatus status) {
+        if (status == AnimationStatus.completed &&
+            _phase == SignalTracePhase.live) {
           _resolveFailure(
             'The pathway destabilized before the pulse reached the output gate.',
           );
@@ -112,7 +111,10 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: <Widget>[
-                              SizedBox(height: 380, child: _buildPlayfield(theme)),
+                              SizedBox(
+                                height: 380,
+                                child: _buildPlayfield(theme),
+                              ),
                               const SizedBox(height: 18),
                               _buildSidebar(theme),
                             ],
@@ -134,10 +136,7 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: <Color>[
-            Color(0xFF102431),
-            Color(0xFF08131A),
-          ],
+          colors: <Color>[Color(0xFF102431), Color(0xFF08131A)],
         ),
         border: Border.all(color: const Color(0xFF244B59)),
       ),
@@ -166,7 +165,10 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
             Expanded(
               child: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
-                  final size = Size(constraints.maxWidth, constraints.maxHeight);
+                  final size = Size(
+                    constraints.maxWidth,
+                    constraints.maxHeight,
+                  );
 
                   return AnimatedBuilder(
                     animation: _timerController,
@@ -219,17 +221,26 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
             Text(widget.region.summary, style: theme.textTheme.bodyMedium),
             const SizedBox(height: 16),
             _HudRow(label: 'Focus reserve', value: '${widget.focus}/4'),
-            _HudRow(label: 'Signal strength', value: '${widget.signalStrength}%'),
+            _HudRow(
+              label: 'Signal strength',
+              value: '${widget.signalStrength}%',
+            ),
             _HudRow(label: 'Relays to sync', value: '$relayCount'),
             _HudRow(label: 'Noise fields', value: '${_spec.noiseZones.length}'),
             const SizedBox(height: 18),
             Text('Neural objective', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
-            Text(widget.region.challengePrompt, style: theme.textTheme.bodyMedium),
+            Text(
+              widget.region.challengePrompt,
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: 14),
             Text('Desired signal rule', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
-            Text(widget.region.correctOption.label, style: theme.textTheme.bodyMedium),
+            Text(
+              widget.region.correctOption.label,
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: 18),
             Text('Status', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
@@ -301,7 +312,8 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
       _nextRelayIndex = 1;
       _driftScoreTotal = 0;
       _driftSamples = 0;
-      _status = 'Prime the neural lens, then anchor the pulse on the entry gate.';
+      _status =
+          'Prime the neural lens, then anchor the pulse on the entry gate.';
       _resultHeadline = '';
       _resultBody = '';
     });
@@ -346,7 +358,9 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
 
     for (final _NoiseZone noiseZone in noiseZones) {
       if ((position - noiseZone.center).distance <= noiseZone.radius) {
-        _resolveFailure('Noise contamination hit the pulse before the relay synced.');
+        _resolveFailure(
+          'Noise contamination hit the pulse before the relay synced.',
+        );
         return;
       }
     }
@@ -428,10 +442,8 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
   List<Offset> _scaledRelays(Size size) {
     return _spec.relays
         .map(
-          (Offset relay) => Offset(
-            size.width * relay.dx,
-            size.height * relay.dy,
-          ),
+          (Offset relay) =>
+              Offset(size.width * relay.dx, size.height * relay.dy),
         )
         .toList(growable: false);
   }
@@ -470,7 +482,8 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
       return (point - start).distance;
     }
 
-    final projection = ((point.dx - start.dx) * segment.dx +
+    final projection =
+        ((point.dx - start.dx) * segment.dx +
             (point.dy - start.dy) * segment.dy) /
         lengthSquared;
     final t = projection.clamp(0.0, 1.0);
@@ -483,10 +496,7 @@ class _SignalTraceMissionSheetState extends State<SignalTraceMissionSheet>
 }
 
 class _NoiseZone {
-  const _NoiseZone({
-    required this.center,
-    required this.radius,
-  });
+  const _NoiseZone({required this.center, required this.radius});
 
   final Offset center;
   final double radius;
@@ -510,7 +520,10 @@ class _SignalTracePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final relays = spec.relays
-        .map((Offset relay) => Offset(size.width * relay.dx, size.height * relay.dy))
+        .map(
+          (Offset relay) =>
+              Offset(size.width * relay.dx, size.height * relay.dy),
+        )
         .toList(growable: false);
     final corridorPath = _buildPath(relays);
     final laneWidth = size.shortestSide * spec.laneWidthFactor;
@@ -565,7 +578,10 @@ class _SignalTracePainter extends CustomPainter {
 
   void _paintNoiseZones(Canvas canvas, Size size) {
     for (final NoiseZoneSpec zone in spec.noiseZones) {
-      final center = Offset(size.width * zone.center.dx, size.height * zone.center.dy);
+      final center = Offset(
+        size.width * zone.center.dx,
+        size.height * zone.center.dy,
+      );
       final radius = size.shortestSide * zone.radiusFactor;
       final glow = Paint()
         ..shader = RadialGradient(
@@ -577,8 +593,9 @@ class _SignalTracePainter extends CustomPainter {
           stops: const <double>[0.15, 0.55, 1],
         ).createShader(Rect.fromCircle(center: center, radius: radius * 1.8));
       final core = Paint()
-        ..color = const Color(0xFFF96B62)
-            .withValues(alpha: 0.3 + (math.sin(timerValue * math.pi * 2) * 0.12));
+        ..color = const Color(
+          0xFFF96B62,
+        ).withValues(alpha: 0.3 + (math.sin(timerValue * math.pi * 2) * 0.12));
       final stroke = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
@@ -590,22 +607,29 @@ class _SignalTracePainter extends CustomPainter {
     }
   }
 
-  void _paintRelayProgress(Canvas canvas, List<Offset> relays, double checkpointRadius) {
+  void _paintRelayProgress(
+    Canvas canvas,
+    List<Offset> relays,
+    double checkpointRadius,
+  ) {
     for (var index = 0; index < relays.length; index++) {
       final relay = relays[index];
       final isComplete = index < nextRelayIndex;
       final isCurrent = index == nextRelayIndex;
       final fill = Paint()
-        ..shader = RadialGradient(
-          colors: <Color>[
-            isComplete
-                ? const Color(0xFFF3C96C)
-                : isCurrent
-                ? const Color(0xFF4AD7B1)
-                : const Color(0xFF173845),
-            const Color(0xFF0E1C24),
-          ],
-        ).createShader(Rect.fromCircle(center: relay, radius: checkpointRadius));
+        ..shader =
+            RadialGradient(
+              colors: <Color>[
+                isComplete
+                    ? const Color(0xFFF3C96C)
+                    : isCurrent
+                    ? const Color(0xFF4AD7B1)
+                    : const Color(0xFF173845),
+                const Color(0xFF0E1C24),
+              ],
+            ).createShader(
+              Rect.fromCircle(center: relay, radius: checkpointRadius),
+            );
       final border = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = isCurrent ? 3 : 2
@@ -651,10 +675,7 @@ class _SignalTracePainter extends CustomPainter {
       Rect.fromLTWH(0, 0, size.width * (1 - timerValue), 8),
       const Radius.circular(999),
     );
-    canvas.drawRRect(
-      barRect,
-      Paint()..color = const Color(0xFF10232D),
-    );
+    canvas.drawRRect(barRect, Paint()..color = const Color(0xFF10232D));
     canvas.drawRRect(
       activeRect,
       Paint()
@@ -687,10 +708,7 @@ class _SignalTracePainter extends CustomPainter {
 }
 
 class _HudRow extends StatelessWidget {
-  const _HudRow({
-    required this.label,
-    required this.value,
-  });
+  const _HudRow({required this.label, required this.value});
 
   final String label;
   final String value;

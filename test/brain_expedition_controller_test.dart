@@ -4,10 +4,10 @@ import 'package:nyris_neurology/features/expedition/domain/brain_region.dart';
 
 void main() {
   group('BrainExpeditionController', () {
-    test('stabilizing the seed region unlocks connected nodes', () {
+    test('successful signal trace unlocks connected nodes', () {
       final controller = BrainExpeditionController();
 
-      controller.answerSelected(0);
+      controller.completeSelectedMission(integrity: 0.94);
 
       expect(
         controller.progressByRegion['prefrontal']?.state,
@@ -21,13 +21,13 @@ void main() {
         controller.progressByRegion['motor']?.state,
         BrainRegionState.reachable,
       );
-      expect(controller.insight, 3);
+      expect(controller.insight, 4);
     });
 
     test('reset returns the expedition to the initial state', () {
       final controller = BrainExpeditionController();
 
-      controller.answerSelected(0);
+      controller.completeSelectedMission(integrity: 0.91);
       controller.reset();
 
       expect(
@@ -41,6 +41,22 @@ void main() {
       expect(controller.insight, 0);
       expect(controller.focus, 4);
       expect(controller.stabilizedCount, 0);
+    });
+
+    test('failed signal trace spends focus and keeps the region reachable', () {
+      final controller = BrainExpeditionController();
+
+      controller.failSelectedMission(
+        reason: 'Signal broke outside the stable corridor.',
+      );
+
+      expect(
+        controller.progressByRegion['prefrontal']?.state,
+        BrainRegionState.reachable,
+      );
+      expect(controller.focus, 3);
+      expect(controller.streak, 0);
+      expect(controller.signalStrength, 68);
     });
   });
 }

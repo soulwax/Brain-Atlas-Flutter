@@ -4,10 +4,7 @@ import 'dart:ui';
 import 'brain_region.dart';
 
 class NoiseZoneSpec {
-  const NoiseZoneSpec({
-    required this.center,
-    required this.radiusFactor,
-  });
+  const NoiseZoneSpec({required this.center, required this.radiusFactor});
 
   final Offset center;
   final double radiusFactor;
@@ -73,7 +70,11 @@ SignalTraceMissionSpec buildSignalTraceMissionSpec(BrainRegion region) {
             0.84,
           ),
         ),
-        radiusFactor: _clamp(0.06 + (difficulty * 0.004) - (index * 0.004), 0.05, 0.082),
+        radiusFactor: _clamp(
+          0.06 + (difficulty * 0.004) - (index * 0.004),
+          0.05,
+          0.082,
+        ),
       ),
   ];
 

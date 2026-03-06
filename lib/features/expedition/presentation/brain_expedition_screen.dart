@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../application/brain_expedition_controller.dart';
 import '../domain/brain_region.dart';
+import '../domain/signal_trace_mission.dart';
 import 'widgets/brain_map_canvas.dart';
+import 'widgets/signal_trace_mission_sheet.dart';
 
 class BrainExpeditionScreen extends StatefulWidget {
   const BrainExpeditionScreen({super.key});
@@ -17,6 +19,22 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
     with SingleTickerProviderStateMixin {
   late final BrainExpeditionController _controller;
   late final AnimationController _pulseController;
+  String? _activeMissionRegionId;
+
+  BrainRegion? get _activeMissionRegion {
+    final activeMissionRegionId = _activeMissionRegionId;
+    if (activeMissionRegionId == null) {
+      return null;
+    }
+
+    for (final BrainRegion region in _controller.regions) {
+      if (region.id == activeMissionRegionId) {
+        return region;
+      }
+    }
+
+    return null;
+  }
 
   @override
   void initState() {
@@ -45,85 +63,138 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
     return AnimatedBuilder(
       animation: mergedListenable,
       builder: (BuildContext context, Widget? child) {
+        final activeMissionRegion = _activeMissionRegion;
         final theme = Theme.of(context);
 
         return Scaffold(
-          body: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[
-                  Color(0xFF061017),
-                  Color(0xFF0B1D26),
-                  Color(0xFF10232D),
-                ],
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    final isWide = constraints.maxWidth >= 1120;
-                    final mapPanel = _MapPanel(
-                      controller: _controller,
-                      pulse: _pulseController.value,
-                    );
-                    final sidePanel = _SidePanel(controller: _controller);
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        _Header(
+          body: Stack(
+            children: <Widget>[
+              DecoratedBox(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: <Color>[
+                      Color(0xFF061017),
+                      Color(0xFF0B1D26),
+                      Color(0xFF10232D),
+                    ],
+                  ),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: LayoutBuilder(
+                      builder: (BuildContext context, BoxConstraints constraints) {
+                        final isWide = constraints.maxWidth >= 1120;
+                        final mapPanel = _MapPanel(
                           controller: _controller,
-                          onReset: _controller.reset,
-                        ),
-                        const SizedBox(height: 20),
-                        Expanded(
-                          child: isWide
-                              ? Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Expanded(flex: 7, child: mapPanel),
-                                    const SizedBox(width: 18),
-                                    SizedBox(
-                                      width: math
-                                          .min(430, constraints.maxWidth * 0.33)
-                                          .toDouble(),
-                                      child: sidePanel,
+                          pulse: _pulseController.value,
+                        );
+                        final sidePanel = _SidePanel(
+                          controller: _controller,
+                          onLaunchMission: _openMissionForSelectedRegion,
+                        );
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            _Header(
+                              controller: _controller,
+                              onReset: _handleReset,
+                            ),
+                            const SizedBox(height: 20),
+                            Expanded(
+                              child: isWide
+                                  ? Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Expanded(flex: 7, child: mapPanel),
+                                        const SizedBox(width: 18),
+                                        SizedBox(
+                                          width: math
+                                              .min(
+                                                430,
+                                                constraints.maxWidth * 0.33,
+                                              )
+                                              .toDouble(),
+                                          child: sidePanel,
+                                        ),
+                                      ],
+                                    )
+                                  : SingleChildScrollView(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: <Widget>[
+                                          SizedBox(
+                                            height: 440,
+                                            child: mapPanel,
+                                          ),
+                                          const SizedBox(height: 18),
+                                          sidePanel,
+                                        ],
+                                      ),
                                     ),
-                                  ],
-                                )
-                              : SingleChildScrollView(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: <Widget>[
-                                      SizedBox(height: 440, child: mapPanel),
-                                      const SizedBox(height: 18),
-                                      sidePanel,
-                                    ],
-                                  ),
-                                ),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'Canvas loop is live now. The next layer is a segmented WebGL brain shell that reuses these region IDs and pathway links.',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF8EA8B4),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'The overworld now hands off to a real mission loop. WebGL can become a presentation layer once the trace mechanic feels right.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: const Color(0xFF8EA8B4),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
-            ),
+              if (activeMissionRegion != null)
+                SignalTraceMissionSheet(
+                  region: activeMissionRegion,
+                  focus: _controller.focus,
+                  signalStrength: _controller.signalStrength,
+                  onMissionSuccess: (double integrity) {
+                    _controller.completeSelectedMission(integrity: integrity);
+                  },
+                  onMissionFailure: (String reason) {
+                    _controller.failSelectedMission(reason: reason);
+                  },
+                  onClose: _closeMission,
+                ),
+            ],
           ),
         );
       },
     );
+  }
+
+  void _openMissionForSelectedRegion() {
+    if (!_controller.canLaunchSelectedMission) {
+      return;
+    }
+
+    setState(() {
+      _activeMissionRegionId = _controller.selectedRegion.id;
+    });
+  }
+
+  void _closeMission() {
+    if (_activeMissionRegionId == null) {
+      return;
+    }
+
+    setState(() {
+      _activeMissionRegionId = null;
+    });
+  }
+
+  void _handleReset() {
+    _closeMission();
+    _controller.reset();
   }
 }
 
@@ -151,7 +222,7 @@ class _Header extends StatelessWidget {
               Text('Neural Cartographer', style: theme.textTheme.displaySmall),
               const SizedBox(height: 10),
               Text(
-                'Explore a living brain map, stabilize core regions, and unlock connected systems through short cognition-first challenges.',
+                'Explore a living brain map, launch short signal-trace missions, and stabilize core regions through execution instead of static answers.',
                 style: theme.textTheme.bodyLarge,
               ),
               const SizedBox(height: 16),
@@ -190,7 +261,7 @@ class _Header extends StatelessWidget {
             Text(controller.progressLabel, style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
-              'Foundation loop: scan, answer, unlock, expand.',
+              'Foundation loop: scan, trace, stabilize, expand.',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -238,7 +309,7 @@ class _MapPanel extends StatelessWidget {
             children: <Widget>[
               Text('Exploration Surface', style: theme.textTheme.titleLarge),
               const Chip(label: Text('Canvas-ready')),
-              const Chip(label: Text('WebGL slot planned')),
+              const Chip(label: Text('Mission loop active')),
               Chip(label: Text('${controller.reachableCount} hotspots online')),
             ],
           ),
@@ -287,14 +358,16 @@ class _MapPanel extends StatelessWidget {
 }
 
 class _SidePanel extends StatelessWidget {
-  const _SidePanel({required this.controller});
+  const _SidePanel({required this.controller, required this.onLaunchMission});
 
   final BrainExpeditionController controller;
+  final VoidCallback onLaunchMission;
 
   @override
   Widget build(BuildContext context) {
     final region = controller.selectedRegion;
     final progress = controller.selectedProgress;
+    final spec = buildSignalTraceMissionSpec(region);
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
@@ -332,7 +405,13 @@ class _SidePanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-                if (progress.isStabilized)
+                if (controller.canLaunchSelectedMission)
+                  FilledButton.icon(
+                    onPressed: onLaunchMission,
+                    icon: const Icon(Icons.graphic_eq_rounded),
+                    label: const Text('Launch signal trace'),
+                  )
+                else
                   OutlinedButton.icon(
                     onPressed: controller.jumpToNextFrontier,
                     icon: const Icon(Icons.arrow_outward_rounded),
@@ -346,41 +425,33 @@ class _SidePanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Region Challenge', style: theme.textTheme.titleLarge),
+                Text('Signal Trace Mission', style: theme.textTheme.titleLarge),
                 const SizedBox(height: 12),
-                Text(region.challengePrompt, style: theme.textTheme.bodyLarge),
-                const SizedBox(height: 18),
-                if (progress.isStabilized)
-                  Text(
-                    'This node is already stable. Use the map or jump to the next hotspot.',
-                    style: theme.textTheme.bodyMedium,
-                  )
-                else
-                  ...List<Widget>.generate(region.challengeOptions.length, (
-                    int index,
-                  ) {
-                    final option = region.challengeOptions[index];
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == region.challengeOptions.length - 1
-                            ? 0
-                            : 12,
-                      ),
-                      child: OutlinedButton(
-                        onPressed: () => controller.answerSelected(index),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            option.label,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFFE9F4F7),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
+                Text(
+                  controller.selectedMissionPrompt,
+                  style: theme.textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 14),
+                Text('Desired signal rule', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 6),
+                Text(
+                  controller.selectedSignalRule,
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                _StatLine(
+                  label: 'Time window',
+                  value: '${spec.timeLimit.inSeconds}s',
+                ),
+                _StatLine(
+                  label: 'Noise fields',
+                  value: '${spec.noiseZones.length}',
+                ),
+                _StatLine(
+                  label: 'Signal corridor',
+                  value: '${(spec.laneWidthFactor * 100).round()}%',
+                ),
+                _StatLine(label: 'Difficulty', value: '${spec.difficulty}'),
               ],
             ),
           ),
@@ -400,16 +471,16 @@ class _SidePanel extends StatelessWidget {
                 const SizedBox(height: 14),
                 const _LoopStep(
                   index: '02',
-                  title: 'Resolve a short cognition challenge',
+                  title: 'Trace the signal route',
                   description:
-                      'Choose the signal that matches the region’s real neurological function.',
+                      'Launch a short mission, drag the pulse through every relay, and avoid unstable noise fields.',
                 ),
                 const SizedBox(height: 14),
                 const _LoopStep(
                   index: '03',
-                  title: 'Unlock adjacent pathways',
+                  title: 'Stabilize and expand',
                   description:
-                      'Correct answers stabilize the node, boost insight, and expose connected regions to explore next.',
+                      'Successful traces stabilize the node, boost insight, and expose adjacent pathways for the next run.',
                 ),
               ],
             ),
@@ -421,7 +492,7 @@ class _SidePanel extends StatelessWidget {
               children: <Widget>[
                 Text('Recent Activity', style: theme.textTheme.titleLarge),
                 const SizedBox(height: 12),
-                for (final entry in controller.activityFeed)
+                for (final String entry in controller.activityFeed)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Text('• $entry', style: theme.textTheme.bodyMedium),
@@ -440,7 +511,7 @@ class _SidePanel extends StatelessWidget {
                     style: theme.textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
-                  for (final entry in controller.codexEntries)
+                  for (final String entry in controller.codexEntries)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: Text(
@@ -605,6 +676,35 @@ class _LoopStep extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _StatLine extends StatelessWidget {
+  const _StatLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF94AAB4),
+              ),
+            ),
+          ),
+          Text(value, style: theme.textTheme.titleMedium),
+        ],
+      ),
     );
   }
 }
