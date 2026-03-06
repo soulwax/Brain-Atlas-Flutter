@@ -2,6 +2,39 @@
 
 Canvas-first Flutter foundation for a brain-exploration game that runs on mobile and web.
 
+## Getting Started
+
+From the project root:
+
+```bash
+flutter pub get
+```
+
+Run the game in the browser:
+
+```bash
+flutter run -d chrome
+```
+
+Run the game on a connected phone or emulator:
+
+```bash
+flutter run
+```
+
+Useful checks:
+
+```bash
+flutter analyze
+flutter test
+```
+
+If you have multiple targets available, list them with:
+
+```bash
+flutter devices
+```
+
 ## Core Loop
 
 1. Observe a short case and identify the key symptom pattern.
