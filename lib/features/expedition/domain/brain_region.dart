@@ -9,6 +9,8 @@ enum BrainRegionDiscipline {
   emotion,
   vision,
   coordination,
+  relay,
+  interoception,
 }
 
 extension BrainRegionDisciplineX on BrainRegionDiscipline {
@@ -30,6 +32,10 @@ extension BrainRegionDisciplineX on BrainRegionDiscipline {
         return 'Vision';
       case BrainRegionDiscipline.coordination:
         return 'Coordination';
+      case BrainRegionDiscipline.relay:
+        return 'Relay';
+      case BrainRegionDiscipline.interoception:
+        return 'Interoception';
     }
   }
 }
@@ -52,6 +58,11 @@ class BrainRegion {
     required this.name,
     required this.shortLabel,
     required this.summary,
+    required this.primaryRole,
+    required this.failurePattern,
+    required this.networkRole,
+    required this.everydayExample,
+    required this.quickFacts,
     required this.discipline,
     required this.positionX,
     required this.positionY,
@@ -67,6 +78,11 @@ class BrainRegion {
   final String name;
   final String shortLabel;
   final String summary;
+  final String primaryRole;
+  final String failurePattern;
+  final String networkRole;
+  final String everydayExample;
+  final List<String> quickFacts;
   final BrainRegionDiscipline discipline;
   final double positionX;
   final double positionY;
