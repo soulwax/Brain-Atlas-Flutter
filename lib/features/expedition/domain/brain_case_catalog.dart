@@ -5,6 +5,19 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
     id: 'case_prefrontal',
     caseCode: 'Case 01',
     title: 'Frozen Plan',
+    severity: CaseSeverity.high,
+    baseResearchValue: 10,
+    symptomTags: <String>['planning', 'executive function', 'goal maintenance'],
+    probes: <CaseProbe>[
+      CaseProbe(
+        id: 'probe_prefrontal_1',
+        title: 'Prefrontal Cortex Function',
+        clue: 'This region holds goals online, inhibits distractions, and sequences actions before movement starts.',
+        learningNote:
+            'The prefrontal cortex stabilizes goals and action plans before they fan out into movement and memory. When it is unstable, plans fragment and reset before they can be executed.',
+      ),
+    ],
+    masteryNote: 'The prefrontal cortex holds goals and plans together before movement starts. Damage here causes plans to fragment and reset before they can be executed, even when the goal is clear and the muscles are ready.',
     presentingProblem:
         'A patient wants to reach for a cup, but keeps restarting the sequence before movement even really begins.',
     observationSummary:
@@ -84,6 +97,11 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
         "Broca's area helps assemble and sequence speech output. Damage here disrupts expression more than comprehension.",
     differentialNote:
         'the patient knows the message already; the breakdown is in producing speech, not understanding it',
+    severity: CaseSeverity.high,
+    baseResearchValue: 8,
+    symptomTags: <String>[],
+    probes: <CaseProbe>[],
+    masteryNote: '',
   ),
   BrainCaseFile(
     id: 'case_motor',
@@ -126,6 +144,11 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
         'The motor cortex converts selected actions into muscle-specific output. When it is unstable, intent does not become clean movement.',
     differentialNote:
         'the person knows what to do and where to do it; the deficit is in executing the command itself',
+    severity: CaseSeverity.high,
+    baseResearchValue: 8,
+    symptomTags: <String>[],
+    probes: <CaseProbe>[],
+    masteryNote: '',
   ),
   BrainCaseFile(
     id: 'case_parietal',
@@ -168,6 +191,11 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
         'The parietal cortex integrates sensory and spatial information into a usable body map. Without it, aiming and navigation drift.',
     differentialNote:
         'the output muscles still work; the broken part is the spatial estimate that guides them',
+    severity: CaseSeverity.high,
+    baseResearchValue: 8,
+    symptomTags: <String>[],
+    probes: <CaseProbe>[],
+    masteryNote: '',
   ),
   BrainCaseFile(
     id: 'case_hippocampus',
@@ -210,6 +238,11 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
         'The hippocampus helps encode experiences into contextual memory so they can be recalled with place and timing intact.',
     differentialNote:
         'the clue is noticed initially; what fails is keeping it attached to context after the moment passes',
+    severity: CaseSeverity.high,
+    baseResearchValue: 8,
+    symptomTags: <String>[],
+    probes: <CaseProbe>[],
+    masteryNote: '',
   ),
   BrainCaseFile(
     id: 'case_amygdala',
@@ -252,11 +285,30 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
         'The amygdala assigns emotional salience and urgency. When it overfires, neutral input can dominate the whole network.',
     differentialNote:
         'the core problem is emotional weighting, not seeing the cue or forming the words to describe it',
+    severity: CaseSeverity.moderate,
+    baseResearchValue: 6,
+    symptomTags: <String>[],
+    probes: <CaseProbe>[],
+    masteryNote: '',
   ),
   BrainCaseFile(
     id: 'case_visual',
     caseCode: 'Case 07',
     title: 'Pathway Hidden in Plain Sight',
+    severity: CaseSeverity.critical,
+    baseResearchValue: 10,
+    symptomTags: <String>['vision', 'feature extraction', 'scene parsing'],
+    probes: <CaseProbe>[
+      CaseProbe(
+        id: 'probe_visual_1',
+        title: 'Visual Cortex Function',
+        clue: 'This region reconstructs meaningful features from incoming signals so the world resolves into usable scenes.',
+        learningNote:
+            'The visual cortex extracts edges, contrast, and motion from raw input to build a structured representation of the scene. Without it, vision remains a noisy blur without clear objects or paths.',
+      ),
+    ],
+    masteryNote: 'The visual cortex is essential for parsing the world into usable features. Damage here leaves the environment present but never organizes it into a clear scene.',  
+
     presentingProblem:
         'A patient stares at a flickering escape route but cannot extract stable edges and motion from the scene.',
     observationSummary:
@@ -297,6 +349,19 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
   ),
   BrainCaseFile(
     id: 'case_cerebellum',
+    severity: CaseSeverity.high,
+    baseResearchValue: 8,
+    symptomTags: <String>['movement', 'timing', 'error correction'],
+    probes: <CaseProbe>[
+      CaseProbe(
+        id: 'probe_cerebellum_1',
+        title: 'Cerebellar Function',
+        clue: 'This region refines timing, balance, and error correction to make movement precise after the main command has started.',
+        learningNote:
+            'The cerebellum is critical for fine-tuning movement once it is underway. It helps adjust timing and force in real time to keep actions smooth and accurate.',
+      ),
+    ],
+    masteryNote: 'The cerebellum refines movement after it starts, so damage here causes timing and correction to collapse even when the initial command is intact.',
     caseCode: 'Case 08',
     title: 'Movement Without Refinement',
     presentingProblem:
