@@ -52,6 +52,7 @@ class BrainCaseFile {
     required this.presentingProblem,
     required this.observationSummary,
     required this.targetRegionId,
+    required this.patternRegionIds,
     required this.observationNotes,
     required this.sceneMetrics,
     required this.probes,
@@ -72,6 +73,7 @@ class BrainCaseFile {
   final String presentingProblem;
   final String observationSummary;
   final String targetRegionId;
+  final List<String> patternRegionIds;
   final List<String> observationNotes;
   final List<CaseSceneMetric> sceneMetrics;
   final List<CaseProbe> probes;

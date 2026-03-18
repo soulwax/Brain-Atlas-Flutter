@@ -128,8 +128,8 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
                             const SizedBox(height: 14),
                             Text(
                               activeCase == null
-                                  ? 'The diagnostic slice is complete. Add another case arc or a second repair mechanic next.'
-                                  : 'Teaching now happens through symptom, hypothesis, repair, and validation instead of region labels first.',
+                                  ? 'The opening learning slice is complete. Add another case arc or deepen the circuit pattern set next.'
+                                  : 'Teaching now happens through symptom patterns, hub localization, partner-network reconstruction, and validation.',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: const Color(0xFF8EA8B4),
                               ),
@@ -147,6 +147,7 @@ class _BrainExpeditionScreenState extends State<BrainExpeditionScreen>
                 SignalTraceMissionSheet(
                   region: _controller.selectedRegion!,
                   caseFile: activeCase,
+                  catalog: _controller.regions,
                   focus: _controller.focus,
                   signalStrength: _controller.signalStrength,
                   onMissionSuccess: (double integrity) {
@@ -219,7 +220,7 @@ class _Header extends StatelessWidget {
               Text('Neural Cartographer', style: theme.textTheme.displaySmall),
               const SizedBox(height: 10),
               Text(
-                'Diagnose the failing brain circuit from symptoms first, repair it through action, then validate the behavioral change before the explanation lands.',
+                'Diagnose the failing brain circuit from symptoms first, rebuild the partner pattern around the right hub, then validate the behavioral change before the explanation lands.',
                 style: theme.textTheme.bodyLarge,
               ),
               const SizedBox(height: 16),
@@ -258,7 +259,7 @@ class _Header extends StatelessWidget {
             Text(controller.progressLabel, style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
-              'Loop: observe, localize, repair, validate.',
+              'Loop: observe, localize, reconstruct the pattern, validate.',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -274,7 +275,7 @@ class _Header extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: controller.jumpToNextFrontier,
                   icon: const Icon(Icons.route_rounded),
-                  label: const Text('Browse hotspots'),
+                  label: const Text('Browse hubs'),
                 ),
               ],
             ),
@@ -333,6 +334,7 @@ class _MapPanel extends StatelessWidget {
                   regions: controller.regions,
                   progressByRegion: controller.progressByRegion,
                   selectedRegionId: controller.selectedRegion?.id,
+                  highlightedRegionIds: controller.highlightedRegionIds,
                   pulse: pulse,
                   onRegionTap: controller.selectRegion,
                 ),
@@ -346,6 +348,7 @@ class _MapPanel extends StatelessWidget {
             children: const <Widget>[
               _LegendChip(label: 'Reachable', color: Color(0xFF4AD7B1)),
               _LegendChip(label: 'Stabilized', color: Color(0xFFF3C96C)),
+              _LegendChip(label: 'Pattern focus', color: Color(0xFF8EB8FF)),
               _LegendChip(label: 'Locked', color: Color(0xFF19303A)),
             ],
           ),
@@ -557,33 +560,37 @@ class _HypothesisCard extends StatelessWidget {
               label: const Text('Test hypothesis'),
             ),
           if (controller.caseStage == BrainCaseStage.repair) ...<Widget>[
-            Text('Repair objective', style: theme.textTheme.titleMedium),
+            Text('Pattern objective', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               controller.selectedMissionPrompt,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
-            Text('Signal rule', style: theme.textTheme.titleMedium),
+            Text('Pattern partners', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
-            Text(
-              controller.selectedSignalRule,
-              style: theme.textTheme.bodyMedium,
-            ),
+            for (final BrainRegion partner in controller.selectedPatternRegions)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  '• ${partner.name} (${partner.discipline.label})',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
             const SizedBox(height: 14),
             FilledButton.icon(
               onPressed: controller.canLaunchSelectedMission
                   ? onLaunchMission
                   : null,
-              icon: const Icon(Icons.graphic_eq_rounded),
-              label: const Text('Launch signal trace'),
+              icon: const Icon(Icons.hub_rounded),
+              label: const Text('Launch pattern lab'),
             ),
           ],
           if (controller.caseStage == BrainCaseStage.debrief) ...<Widget>[
-            Text('Validation archived', style: theme.textTheme.titleMedium),
+            Text('Pattern archived', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
-              'The behavior has improved. Archive the case to move on to the next symptom pattern.',
+              'The behavior has improved. Archive the lesson to move on to the next symptom pattern.',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 14),
@@ -668,7 +675,7 @@ class _CompletionCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'Add more cases, more repair types, or a richer scene presentation next. The state model is already shaped around that loop.',
+            'Add more cases, more pattern sets, or a richer scene presentation next. The state model is already shaped around that loop.',
             style: theme.textTheme.bodyMedium,
           ),
         ],
@@ -787,7 +794,7 @@ class _StageChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (String label, Color accent) = switch (stage) {
       BrainCaseStage.investigation => ('Observe', const Color(0xFF8EB8FF)),
-      BrainCaseStage.repair => ('Repair', const Color(0xFF4AD7B1)),
+      BrainCaseStage.repair => ('Pattern', const Color(0xFF4AD7B1)),
       BrainCaseStage.debrief => ('Validate', const Color(0xFFF3C96C)),
       BrainCaseStage.complete => ('Complete', const Color(0xFFFF8B74)),
     };

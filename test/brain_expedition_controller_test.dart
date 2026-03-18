@@ -33,6 +33,25 @@ void main() {
       },
     );
 
+    test('correct diagnosis exposes the case-specific partner pattern', () {
+      final controller = BrainExpeditionController();
+
+      controller.selectRegion('prefrontal');
+      controller.submitHypothesis();
+
+      expect(controller.caseStage, BrainCaseStage.repair);
+      expect(
+        controller.selectedPatternRegions.map((BrainRegion item) => item.id),
+        <String>['hippocampus', 'broca', 'motor'],
+      );
+      expect(controller.highlightedRegionIds, <String>{
+        'prefrontal',
+        'hippocampus',
+        'broca',
+        'motor',
+      });
+    });
+
     test(
       'wrong diagnosis keeps the case in investigation and lightly penalizes signal',
       () {

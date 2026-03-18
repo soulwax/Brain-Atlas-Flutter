@@ -12,17 +12,20 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
       CaseProbe(
         id: 'probe_prefrontal_1',
         title: 'Prefrontal Cortex Function',
-        clue: 'This region holds goals online, inhibits distractions, and sequences actions before movement starts.',
+        clue:
+            'This region holds goals online, inhibits distractions, and sequences actions before movement starts.',
         learningNote:
             'The prefrontal cortex stabilizes goals and action plans before they fan out into movement and memory. When it is unstable, plans fragment and reset before they can be executed.',
       ),
     ],
-    masteryNote: 'The prefrontal cortex holds goals and plans together before movement starts. Damage here causes plans to fragment and reset before they can be executed, even when the goal is clear and the muscles are ready.',
+    masteryNote:
+        'The prefrontal cortex holds goals and plans together before movement starts. Damage here causes plans to fragment and reset before they can be executed, even when the goal is clear and the muscles are ready.',
     presentingProblem:
         'A patient wants to reach for a cup, but keeps restarting the sequence before movement even really begins.',
     observationSummary:
         'Goal recognition is intact, but the action plan does not hold together long enough to execute cleanly.',
     targetRegionId: 'prefrontal',
+    patternRegionIds: <String>['hippocampus', 'broca', 'motor'],
     observationNotes: <String>[
       'The patient can describe the goal out loud.',
       'Strength is available once someone else cues each step.',
@@ -65,6 +68,7 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
     observationSummary:
         'Comprehension is preserved, but turning thought into fluent articulation keeps breaking down.',
     targetRegionId: 'broca',
+    patternRegionIds: <String>['wernicke', 'prefrontal', 'motor'],
     observationNotes: <String>[
       'The patient follows instructions correctly.',
       'They become frustrated because the message is clear in their head.',
@@ -112,6 +116,7 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
     observationSummary:
         'The plan and target are intact, yet the outgoing body command is unstable once execution begins.',
     targetRegionId: 'motor',
+    patternRegionIds: <String>['prefrontal', 'basal_ganglia', 'cerebellum'],
     observationNotes: <String>[
       'The patient can point to the intended target on a diagram.',
       'They report what movement they are trying to perform.',
@@ -159,6 +164,7 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
     observationSummary:
         'The body is active, yet the internal map of where the body is in space keeps slipping.',
     targetRegionId: 'parietal',
+    patternRegionIds: <String>['somatosensory', 'visual', 'motor'],
     observationNotes: <String>[
       'The patient reports that the target feels farther away than it looks.',
       'Touch feedback arrives, but it does not settle the estimate.',
@@ -206,6 +212,7 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
     observationSummary:
         'Experience is being registered, but the episode is not sticking to context, place, and sequence.',
     targetRegionId: 'hippocampus',
+    patternRegionIds: <String>['parietal', 'amygdala', 'prefrontal'],
     observationNotes: <String>[
       'The clue is recognized in the moment.',
       'A minute later, the patient cannot place it back into the route.',
@@ -253,6 +260,7 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
     observationSummary:
         'Salience tagging is overfiring, so ordinary signals keep hijacking attention and action.',
     targetRegionId: 'amygdala',
+    patternRegionIds: <String>['visual', 'insula', 'prefrontal'],
     observationNotes: <String>[
       'The cue itself is mild and familiar.',
       'The patient still perceives it accurately.',
@@ -302,18 +310,21 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
       CaseProbe(
         id: 'probe_visual_1',
         title: 'Visual Cortex Function',
-        clue: 'This region reconstructs meaningful features from incoming signals so the world resolves into usable scenes.',
+        clue:
+            'This region reconstructs meaningful features from incoming signals so the world resolves into usable scenes.',
         learningNote:
             'The visual cortex extracts edges, contrast, and motion from raw input to build a structured representation of the scene. Without it, vision remains a noisy blur without clear objects or paths.',
       ),
     ],
-    masteryNote: 'The visual cortex is essential for parsing the world into usable features. Damage here leaves the environment present but never organizes it into a clear scene.',  
+    masteryNote:
+        'The visual cortex is essential for parsing the world into usable features. Damage here leaves the environment present but never organizes it into a clear scene.',
 
     presentingProblem:
         'A patient stares at a flickering escape route but cannot extract stable edges and motion from the scene.',
     observationSummary:
         'The world is arriving at the eyes, yet the visual features needed to parse the route are not resolving.',
     targetRegionId: 'visual',
+    patternRegionIds: <String>['thalamus', 'parietal', 'motor'],
     observationNotes: <String>[
       'The patient can still orient toward the scene.',
       'They describe it as a blur of movement without useful structure.',
@@ -356,12 +367,14 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
       CaseProbe(
         id: 'probe_cerebellum_1',
         title: 'Cerebellar Function',
-        clue: 'This region refines timing, balance, and error correction to make movement precise after the main command has started.',
+        clue:
+            'This region refines timing, balance, and error correction to make movement precise after the main command has started.',
         learningNote:
             'The cerebellum is critical for fine-tuning movement once it is underway. It helps adjust timing and force in real time to keep actions smooth and accurate.',
       ),
     ],
-    masteryNote: 'The cerebellum refines movement after it starts, so damage here causes timing and correction to collapse even when the initial command is intact.',
+    masteryNote:
+        'The cerebellum refines movement after it starts, so damage here causes timing and correction to collapse even when the initial command is intact.',
     caseCode: 'Case 08',
     title: 'Movement Without Refinement',
     presentingProblem:
@@ -369,6 +382,7 @@ const List<BrainCaseFile> brainCaseCatalog = <BrainCaseFile>[
     observationSummary:
         'The main motor command is present, but fine-grained error correction is too weak to keep the motion precise.',
     targetRegionId: 'cerebellum',
+    patternRegionIds: <String>['motor', 'somatosensory', 'visual'],
     observationNotes: <String>[
       'The patient starts the action on purpose.',
       'The first pass is close, but wobble grows instead of shrinking.',

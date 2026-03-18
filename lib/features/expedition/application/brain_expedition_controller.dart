@@ -28,7 +28,7 @@ class BrainExpeditionController extends ChangeNotifier {
   String? _activeCaseId;
   BrainCaseStage _caseStage = BrainCaseStage.investigation;
   String _caseStatus =
-      'Review the symptoms first, then localize the fault on the map.';
+      'Review the symptoms first, then identify the hub that best explains the failing pattern.';
   int _focus = _maxFocus;
   int _signalStrength = 78;
   int _insight = 0;
@@ -102,6 +102,25 @@ class BrainExpeditionController extends ChangeNotifier {
 
   bool get canAdvanceCase => _caseStage == BrainCaseStage.debrief;
 
+  List<BrainRegion> get selectedPatternRegions {
+    final activeCase = this.activeCase;
+    if (activeCase == null) {
+      return const <BrainRegion>[];
+    }
+
+    return activeCase.patternRegionIds.map(_regionById).toList(growable: false);
+  }
+
+  Set<String> get highlightedRegionIds {
+    if (!selectedRegionMatchesCase ||
+        (_caseStage != BrainCaseStage.repair &&
+            _caseStage != BrainCaseStage.debrief)) {
+      return const <String>{};
+    }
+
+    return <String>{selectedRegion!.id, ...activeCase!.patternRegionIds};
+  }
+
   List<String> get activityFeed =>
       List<String>.unmodifiable(_activityFeed.reversed.take(4));
 
@@ -126,11 +145,11 @@ class BrainExpeditionController extends ChangeNotifier {
 
     switch (_caseStage) {
       case BrainCaseStage.investigation:
-        return 'Localize the fault behind ${activeCase.title.toLowerCase()}';
+        return 'Localize the hub behind ${activeCase.title.toLowerCase()}';
       case BrainCaseStage.repair:
-        return 'Repair ${selectedRegion?.name ?? _targetRegion.name}';
+        return 'Rebuild the pattern around ${selectedRegion?.name ?? _targetRegion.name}';
       case BrainCaseStage.debrief:
-        return 'Validate the recovery and learn the circuit';
+        return 'Validate the recovery and lock in the circuit lesson';
       case BrainCaseStage.complete:
         return 'Opening circuit restored';
     }
@@ -148,7 +167,9 @@ class BrainExpeditionController extends ChangeNotifier {
       case BrainCaseStage.repair:
         return activeCase.repairObjective;
       case BrainCaseStage.debrief:
-        return activeCase.explanation;
+        return activeCase.masteryNote.isEmpty
+            ? activeCase.explanation
+            : activeCase.masteryNote;
       case BrainCaseStage.complete:
         return 'The first case arc is complete. Add more cases or new repair types next.';
     }
@@ -177,7 +198,7 @@ class BrainExpeditionController extends ChangeNotifier {
         : BrainCaseStage.investigation;
     _caseStatus = _activeCaseId == null
         ? 'All opening cases are already resolved.'
-        : 'Review the presenting problem, then choose the most likely region on the map.';
+        : 'Review the presenting problem, then choose the hub that best explains the failing brain pattern.';
     _focus = _maxFocus;
     _signalStrength = 78;
     _insight = 0;
@@ -185,7 +206,7 @@ class BrainExpeditionController extends ChangeNotifier {
     _activityFeed
       ..clear()
       ..add(
-        'Case files are live. Start with the first symptom pattern and localize the failing circuit before repairing it.',
+        'Case files are live. Start with the first symptom pattern, localize the right hub, then rebuild its partner pattern to learn the circuit.',
       );
     _codexEntries.clear();
 
@@ -210,7 +231,7 @@ class BrainExpeditionController extends ChangeNotifier {
 
     _selectedRegionId = regionId;
     _caseStatus =
-        'Hypothesis set to ${selectedRegion!.name}. Compare it to the symptom pattern, then test the diagnosis.';
+        'Hypothesis set to ${selectedRegion!.name}. Compare it to the symptom pattern, then test whether this hub fits the failing circuit.';
     _appendFeed('Hypothesis shifted to ${selectedRegion!.name}.');
     notifyListeners();
   }
@@ -223,7 +244,7 @@ class BrainExpeditionController extends ChangeNotifier {
     if (selectedRegionMatchesCase) {
       _caseStage = BrainCaseStage.repair;
       _caseStatus =
-          'Localization confirmed. Launch the repair mission and see whether the behavior recovers.';
+          'Localization confirmed. Launch the pattern lab and rebuild how this region works with its partner areas.';
       _appendFeed(
         'Hypothesis confirmed: ${selectedRegion!.name} matches the symptom pattern in ${activeCase!.caseCode}.',
       );
@@ -264,9 +285,9 @@ class BrainExpeditionController extends ChangeNotifier {
     _streak += 1;
     _caseStage = BrainCaseStage.debrief;
     _caseStatus =
-        'Repair successful. Compare the before and after state, then archive the explanation.';
+        'Pattern reconstructed. Compare the before and after state, then archive the network lesson.';
     _appendFeed(
-      'Signal trace stabilized ${selectedRegion!.name} at ${(integrityValue * 100).round()}% integrity.',
+      'Pattern lab stabilized ${selectedRegion!.name} at ${(integrityValue * 100).round()}% integrity.',
     );
     _appendFeed(activeCase!.validationSummary);
     if (bonusInsight > 0) {
@@ -291,7 +312,8 @@ class BrainExpeditionController extends ChangeNotifier {
     _focus = math.max(0, _focus - 1);
     _signalStrength = math.max(34, _signalStrength - 10);
     _streak = 0;
-    _caseStatus = '$reason Re-enter the repair once the route is clear.';
+    _caseStatus =
+        '$reason Re-open the pattern lab once the region relationships are clear.';
     _appendFeed(reason);
     _checkFocusReset();
     notifyListeners();
@@ -307,14 +329,14 @@ class BrainExpeditionController extends ChangeNotifier {
     if (_activeCaseId == null) {
       _caseStage = BrainCaseStage.complete;
       _caseStatus =
-          'All opening cases resolved. The next step is adding more cases or new repair mechanics.';
+          'All opening cases resolved. The next step is adding more cases or deeper circuit patterns.';
       _appendFeed(
         'All opening cases resolved. The first diagnostic loop is complete.',
       );
     } else {
       _caseStage = BrainCaseStage.investigation;
       _caseStatus =
-          'New case loaded. Observe the failure first, then choose a likely region.';
+          'New case loaded. Observe the failure first, then choose the hub and reconstruct its partner pattern.';
       _appendFeed(
         'New case file loaded: ${activeCase!.caseCode} ${activeCase!.title}.',
       );
@@ -338,7 +360,7 @@ class BrainExpeditionController extends ChangeNotifier {
     if (_selectedRegionId == null) {
       _selectedRegionId = reachable.first.id;
       _caseStatus =
-          'Hypothesis set to ${selectedRegion!.name}. Compare it to the symptom pattern, then test the diagnosis.';
+          'Hypothesis set to ${selectedRegion!.name}. Compare it to the symptom pattern, then test whether this hub fits the failing circuit.';
       notifyListeners();
       return;
     }
@@ -351,7 +373,7 @@ class BrainExpeditionController extends ChangeNotifier {
         : (currentIndex + 1) % reachable.length;
     _selectedRegionId = reachable[nextIndex].id;
     _caseStatus =
-        'Hypothesis set to ${selectedRegion!.name}. Compare it to the symptom pattern, then test the diagnosis.';
+        'Hypothesis set to ${selectedRegion!.name}. Compare it to the symptom pattern, then test whether this hub fits the failing circuit.';
     notifyListeners();
   }
 

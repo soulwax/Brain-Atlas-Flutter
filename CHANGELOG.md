@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 - 2026-03-17
+
+### Added
+
+- Added case-specific circuit partner patterns so each diagnosis now teaches how the target region works with other brain areas.
+- Added a pattern-lab mission overlay with clue cards, candidate regions, circuit notes, and integrity scoring based on reconstruction quality.
+- Added visual pattern-focus highlighting on the brain map for the diagnosed region and its teaching partners.
+
+### Changed
+
+- Replaced the old `Signal Trace` repair microgame with a learning-first circuit reconstruction mechanic.
+- Updated the expedition interface, mission copy, and documentation to talk about hub localization, partner patterns, and lesson archiving.
+- Changed case data so each opening case carries its own educational partner set for the repair phase.
+
 ## 0.4.0 - 2026-03-06
 
 ### Added

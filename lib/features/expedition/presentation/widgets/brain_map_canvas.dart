@@ -10,6 +10,7 @@ class BrainMapCanvas extends StatelessWidget {
     required this.regions,
     required this.progressByRegion,
     required this.selectedRegionId,
+    required this.highlightedRegionIds,
     required this.pulse,
     required this.onRegionTap,
   });
@@ -17,6 +18,7 @@ class BrainMapCanvas extends StatelessWidget {
   final List<BrainRegion> regions;
   final Map<String, BrainRegionProgress> progressByRegion;
   final String? selectedRegionId;
+  final Set<String> highlightedRegionIds;
   final double pulse;
   final ValueChanged<String> onRegionTap;
 
@@ -39,6 +41,7 @@ class BrainMapCanvas extends StatelessWidget {
               regions: regions,
               progressByRegion: progressByRegion,
               selectedRegionId: selectedRegionId,
+              highlightedRegionIds: highlightedRegionIds,
               pulse: pulse,
             ),
             size: Size.infinite,
@@ -80,12 +83,14 @@ class _BrainMapPainter extends CustomPainter {
     required this.regions,
     required this.progressByRegion,
     required this.selectedRegionId,
+    required this.highlightedRegionIds,
     required this.pulse,
   });
 
   final List<BrainRegion> regions;
   final Map<String, BrainRegionProgress> progressByRegion;
   final String? selectedRegionId;
+  final Set<String> highlightedRegionIds;
   final double pulse;
 
   @override
@@ -273,10 +278,15 @@ class _BrainMapPainter extends CustomPainter {
       final radius = size.shortestSide * region.radiusFactor;
       final stateColors = _colorsFor(progress.state);
       final isSelected = region.id == selectedRegionId;
+      final isHighlighted = highlightedRegionIds.contains(region.id);
       final glowRadius = radius * (1.28 + (pulse * 0.18));
       final glowPaint = Paint()
         ..color = stateColors.$1.withValues(
-          alpha: progress.isAvailable ? (0.2 + (pulse * 0.12)) : 0.08,
+          alpha: isHighlighted
+              ? 0.28 + (pulse * 0.16)
+              : progress.isAvailable
+              ? (0.2 + (pulse * 0.12))
+              : 0.08,
         );
       final nodePaint = Paint()
         ..shader = RadialGradient(
@@ -288,6 +298,17 @@ class _BrainMapPainter extends CustomPainter {
         ..color = isSelected ? const Color(0xFFF6E8B1) : stateColors.$3;
 
       canvas.drawCircle(center, glowRadius, glowPaint);
+      if (isHighlighted && !isSelected) {
+        final highlightPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5
+          ..color = const Color(0xFF8EB8FF).withValues(alpha: 0.82);
+        canvas.drawCircle(
+          center,
+          radius * (1.58 + (pulse * 0.08)),
+          highlightPaint,
+        );
+      }
       canvas.drawCircle(center, radius, nodePaint);
       canvas.drawCircle(center, radius, borderPaint);
 
@@ -374,6 +395,7 @@ class _BrainMapPainter extends CustomPainter {
   bool shouldRepaint(covariant _BrainMapPainter oldDelegate) {
     return oldDelegate.progressByRegion != progressByRegion ||
         oldDelegate.selectedRegionId != selectedRegionId ||
+        oldDelegate.highlightedRegionIds != highlightedRegionIds ||
         oldDelegate.pulse != pulse ||
         oldDelegate.regions != regions;
   }

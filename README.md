@@ -39,8 +39,8 @@ flutter devices
 
 1. Observe a short case and identify the key symptom pattern.
 2. Scan the brain map and commit a hypothesis for the failing region.
-3. Launch a repair mission such as `Signal Trace` once the diagnosis fits the case.
-4. Validate the behavioral change after repair and read a short causal explanation.
+3. Launch a circuit-pattern lab once the diagnosis fits the case and rebuild how the target hub works with partner regions.
+4. Validate the behavioral change after the pattern reconstruction and read a short causal explanation.
 5. Archive the case, unlock connected pathways, and move to the next symptom pattern.
 
 ## What Is Implemented
@@ -48,10 +48,10 @@ flutter devices
 - Responsive Flutter UI for phone and browser.
 - Custom `Canvas`-driven brain map with pulsing hotspots and pathway links.
 - A playable symptom-first loop with case files, hypothesis testing, repair, validation, and debrief.
-- A playable `Signal Trace` microgame that runs as the first repair type on top of the overworld map.
+- A playable circuit-pattern lab that turns each repair phase into an educational network reconstruction challenge.
 - Curated case catalog with observation notes, scene metrics, and after-repair explanations for the opening brain regions.
 - Domain catalog for key brain regions, their functions, and unlock graph.
-- Deterministic mission specs for relays, hazards, timing, and corridor width.
+- Deterministic mission specs for case-specific partner clues, candidate regions, and scan windows.
 - Progression controller with case stages, focus, signal strength, insight, codex notes, and mission-based stabilization.
 - Seed gameplay loop that can later drive 3D/WebGL visuals without changing the progression model.
 
@@ -59,7 +59,7 @@ flutter devices
 
 The current loop now proves the educational structure. The next strong step is mission variety inside the same case system:
 
-- `Signal Trace`: the current routing-and-stability mission.
+- `Circuit Pattern Lab`: the current clue-to-region reconstruction mission.
 - `Memory Weave`: reconstruct a route from brief visual exposure before it fades.
 - `Motor Sync`: tap or drag in rhythm to fine-tune timing and force output.
 

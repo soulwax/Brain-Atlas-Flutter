@@ -1,93 +1,152 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
+import 'brain_case_file.dart';
 import 'brain_region.dart';
 
-class NoiseZoneSpec {
-  const NoiseZoneSpec({required this.center, required this.radiusFactor});
+class PatternSlotSpec {
+  const PatternSlotSpec({
+    required this.regionId,
+    required this.slotLabel,
+    required this.clue,
+    required this.learningNote,
+  });
 
-  final Offset center;
-  final double radiusFactor;
+  final String regionId;
+  final String slotLabel;
+  final String clue;
+  final String learningNote;
 }
 
 class SignalTraceMissionSpec {
   const SignalTraceMissionSpec({
-    required this.relays,
-    required this.noiseZones,
+    required this.slots,
+    required this.candidateRegionIds,
     required this.timeLimit,
-    required this.laneWidthFactor,
-    required this.checkpointRadiusFactor,
     required this.difficulty,
   });
 
-  final List<Offset> relays;
-  final List<NoiseZoneSpec> noiseZones;
+  final List<PatternSlotSpec> slots;
+  final List<String> candidateRegionIds;
   final Duration timeLimit;
-  final double laneWidthFactor;
-  final double checkpointRadiusFactor;
   final int difficulty;
 }
 
-SignalTraceMissionSpec buildSignalTraceMissionSpec(BrainRegion region) {
-  final seed = region.id.codeUnits.fold<int>(
-    0,
-    (int sum, int codeUnit) => sum + codeUnit,
+SignalTraceMissionSpec buildSignalTraceMissionSpec({
+  required BrainRegion region,
+  required BrainCaseFile caseFile,
+  required List<BrainRegion> catalog,
+}) {
+  final regionById = <String, BrainRegion>{
+    for (final BrainRegion item in catalog) item.id: item,
+  };
+  final slots = <PatternSlotSpec>[
+    for (var index = 0; index < caseFile.patternRegionIds.length; index++)
+      if (regionById[caseFile.patternRegionIds[index]]
+          case final BrainRegion partner)
+        PatternSlotSpec(
+          regionId: partner.id,
+          slotLabel: _buildSlotLabel(
+            partner: partner,
+            index: index,
+            orderedPartnerIds: caseFile.patternRegionIds,
+            regionById: regionById,
+          ),
+          clue: partner.primaryRole,
+          learningNote:
+              '${partner.name} feeds this case pattern because ${partner.networkRole.toLowerCase()}.',
+        ),
+  ];
+  final distractorIds = _pickDistractorIds(
+    targetRegion: region,
+    protectedIds: <String>{
+      region.id,
+      ...slots.map((PatternSlotSpec slot) => slot.regionId),
+    },
+    catalog: catalog,
   );
+  final candidateRegionIds =
+      <String>[
+        ...slots.map((PatternSlotSpec slot) => slot.regionId),
+        ...distractorIds,
+      ]..sort(
+        (String left, String right) => _stableSeed(
+          left,
+          region.id,
+          caseFile.id,
+        ).compareTo(_stableSeed(right, region.id, caseFile.id)),
+      );
   final difficulty = math.max(
     1,
-    region.rewardInsight + (region.connections.length ~/ 2),
+    slots.length + region.rewardInsight + (distractorIds.length ~/ 2),
   );
-  final lateralBias = ((seed % 5) - 2) / 18;
-  final verticalWave = ((seed % 7) - 3) / 22;
-  final relayPoints = <Offset>[
-    Offset(0.12, _clamp(0.72 - (lateralBias * 0.45), 0.18, 0.82)),
-    Offset(
-      0.28,
-      _clamp(0.26 + lateralBias.abs() * 0.85 + ((seed % 3) * 0.035), 0.2, 0.8),
-    ),
-    Offset(0.48, _clamp(0.62 - verticalWave, 0.2, 0.8)),
-    Offset(
-      0.68,
-      _clamp(0.3 + lateralBias + (((seed ~/ 3) % 3) * 0.024), 0.18, 0.78),
-    ),
-    Offset(0.88, _clamp(0.56 - (lateralBias * 0.6), 0.2, 0.82)),
-  ];
-
-  final noiseZones = <NoiseZoneSpec>[
-    for (var index = 1; index < relayPoints.length - 1; index++)
-      NoiseZoneSpec(
-        center: Offset(
-          _clamp(
-            relayPoints[index].dx + (index.isEven ? 0.05 : -0.035),
-            0.16,
-            0.86,
-          ),
-          _clamp(
-            relayPoints[index].dy +
-                (((seed + index) % 2 == 0) ? 1 : -1) *
-                    (0.085 + (difficulty * 0.006)),
-            0.15,
-            0.84,
-          ),
-        ),
-        radiusFactor: _clamp(
-          0.06 + (difficulty * 0.004) - (index * 0.004),
-          0.05,
-          0.082,
-        ),
-      ),
-  ];
 
   return SignalTraceMissionSpec(
-    relays: relayPoints,
-    noiseZones: noiseZones,
-    timeLimit: Duration(seconds: math.max(14, 21 - difficulty)),
-    laneWidthFactor: _clamp(0.11 - (difficulty * 0.008), 0.055, 0.1),
-    checkpointRadiusFactor: 0.046,
+    slots: slots,
+    candidateRegionIds: candidateRegionIds,
+    timeLimit: Duration(seconds: math.max(32, 54 - difficulty * 2)),
     difficulty: difficulty,
   );
 }
 
-double _clamp(double value, double min, double max) {
-  return value.clamp(min, max).toDouble();
+String _buildSlotLabel({
+  required BrainRegion partner,
+  required int index,
+  required List<String> orderedPartnerIds,
+  required Map<String, BrainRegion> regionById,
+}) {
+  final duplicateCount = orderedPartnerIds
+      .where((String id) => regionById[id]?.discipline == partner.discipline)
+      .length;
+  final baseLabel = '${partner.discipline.label} link';
+  if (duplicateCount < 2) {
+    return baseLabel;
+  }
+
+  return '$baseLabel ${index + 1}';
+}
+
+List<String> _pickDistractorIds({
+  required BrainRegion targetRegion,
+  required Set<String> protectedIds,
+  required List<BrainRegion> catalog,
+}) {
+  final candidates =
+      catalog
+          .where((BrainRegion region) => !protectedIds.contains(region.id))
+          .toList(growable: false)
+        ..sort((BrainRegion left, BrainRegion right) {
+          final scoreDifference =
+              _distractorScore(right, targetRegion) -
+              _distractorScore(left, targetRegion);
+          if (scoreDifference != 0) {
+            return scoreDifference;
+          }
+
+          return left.name.compareTo(right.name);
+        });
+
+  return candidates.take(2).map((BrainRegion item) => item.id).toList();
+}
+
+int _distractorScore(BrainRegion candidate, BrainRegion targetRegion) {
+  var score = candidate.rewardInsight;
+  if (candidate.discipline == targetRegion.discipline) {
+    score += 4;
+  }
+  if (candidate.connections.contains(targetRegion.id) ||
+      targetRegion.connections.contains(candidate.id)) {
+    score += 3;
+  }
+  if (candidate.challengeOptions.length ==
+      targetRegion.challengeOptions.length) {
+    score += 1;
+  }
+  return score;
+}
+
+int _stableSeed(String candidateId, String regionId, String caseId) {
+  return '$candidateId::$regionId::$caseId'.codeUnits.fold<int>(
+    0,
+    (int total, int codeUnit) => total + codeUnit,
+  );
 }
